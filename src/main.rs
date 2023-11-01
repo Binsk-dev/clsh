@@ -4,22 +4,21 @@ use std::{env, fs::File};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    let hosts = extract_hosts(args);
+    println!("{:?}", hosts);
+}
 
+fn extract_hosts(args: Vec<String>) -> Vec<String> {
     let hosts: Vec<String> = match args[1].as_str() {
-        "-h" => args[2].split(",").map(|x| x.to_string()).collect(),
+        "-h" => get_hosts_from_string(args[2].as_str()),
         "--hostfile" => {
-            let path = Path::new("clusterfile");
-
-            let mut file = match File::open(&path) {
-                Ok(file) => file,
-                Err(why) => panic!("Fail to open: {}, {}", path.display(), why),
-            };
-
             let mut buf = String::new();
-            match file.read_to_string(&mut buf) {
-                Ok(_) => (),
-                Err(why) => panic!("Fail to read hostfile. {}", why),
-            }
+            let path = Path::new(args[2].as_str());
+            
+            let _ = match File::open(path) {
+                Ok(mut file) => file.read_to_string(&mut buf),
+                Err(_) => panic!("Fail to find hostfile"),
+            };
 
             let mut hosts: Vec<String> = Vec::new();
             for ln in buf.split("\n") {
@@ -29,7 +28,22 @@ fn main() {
             }
             hosts
         }
-        _ => panic!("Can't find to host"),
+        _ => {
+            match env::var_os("CLSH_HOSTS") {
+                Some(hosts) => {
+                    if let Some(something) = hosts.to_str() {
+                        get_hosts_from_string(something)
+                    } else {
+                        panic!("Can't convert to string...")
+                    }
+                },
+                None => panic!("Can't find CLSH_HOST ENV..."),
+            } 
+        }
     };
-    println!("{:?}", hosts);
+    hosts
+}
+
+fn get_hosts_from_string(host_string: &str) -> Vec<String> {
+    host_string.split(",").map(|x| x.to_string()).collect()
 }
