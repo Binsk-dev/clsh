@@ -1,3 +1,4 @@
+use core::panic;
 use std::io::prelude::*;
 use std::path::Path;
 use std::{env, fs::File};
@@ -38,12 +39,23 @@ fn extract_hosts(args: Vec<String>) -> Vec<String> {
                     }
                 },
                 None => panic!("Can't find CLSH_HOST ENV..."),
-            } 
+            }
+
+            // match env::var_os("CLSH_HOSTFILE") {
+            //     Some(path) => {
+            //         if let Some(something) = path.to_str() {
+
+            //         } else {
+
+            //         }
+            //     },
+            //     None => panic!("Can't find CLSH_HOSTFILE ENV..."),
+            // } 
         }
     };
     hosts
 }
 
 fn get_hosts_from_string(host_string: &str) -> Vec<String> {
-    host_string.split(",").map(|x| x.to_string()).collect()
+    host_string.split(":").map(|x| x.to_string()).collect()
 }
